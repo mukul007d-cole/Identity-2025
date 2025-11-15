@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Server Test</title>
+    <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          display: grid;
+          place-items: center;
+          min-height: 90vh;
+          background-color: #f4f7f6;
+          color: #333;
+        }
+        .container {
+          text-align: center;
+          background-color: #ffffff;
+          padding: 2rem 3rem;
+          border-radius: 12px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+          color: #002147;
+          margin-bottom: 2rem;
+        }
+        button {
+          background-color: #B8860B;
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          font-size: 1rem;
+          font-weight: 600;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: transform 0.2s ease;
+        }
+        button:hover {
+          transform: translateY(-2px);
+        }
+        #message {
+          margin-top: 1.5rem;
+          font-style: italic;
+          color: #555;
+        }
+        #image-container {
+          margin-top: 2rem;
+          min-height: 300px; /* Reserve space */
+          background-color: #f0f0f0;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        img {
+          max-width: 100%;
+          width: 600px; /* Fixed width for consistency */
+          height: auto;
+          display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Mock Server Test Page</h1>
+        <p>This page directly tests the mock server on port 81.</p>
+        <button id="captureButton">Get Mock Image</button>
+        <p id="message">Click the button to test the mock server.</p>
+        <div id="image-container">
+            <img id="capturedImage" src="" alt="Mock image will appear here">
+        </div>
+    </div>
+
+    <script>
+        const captureButton = document.getElementById('captureButton');
+        const capturedImage = document.getElementById('capturedImage');
+        const message = document.getElementById('message');
+        
+        // This is the URL of the mock server
+        const MOCK_SERVER_URL = 'http://127.0.0.1:81/capture';
+
+        captureButton.addEventListener('click', async () => {
+          try {
+            message.textContent = 'Fetching from mock server...';
+            capturedImage.src = ""; // Clear old image
+
+            // Directly fetch from the mock server
+            const response = await fetch(MOCK_SERVER_URL);
+
+            if (!response.ok) {
+              throw new Error('Failed to get image from mock server.');
+            }
+
+            const imageBlob = await response.blob();
+            const imageUrl = URL.createObjectURL(imageBlob);
+            
+            capturedImage.src = imageUrl;
+            message.textContent = 'Mock image loaded successfully!';
+
+          } catch (error) {
+            console.error('Error fetching mock image:', error);
+            message.textContent = 'Error: Could not fetch image. Is the mock server running?';
+          }
+        });
+    </script>
+
+</body>
+</html>
