@@ -1,17 +1,73 @@
 <!DOCTYPE html>
-<html lang="eng">
+<html lang="en">
 <head>
   <title>LifeOS Voice Test</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    #log { white-space: pre-wrap; background: #eee; padding: 10px; margin-top: 20px; }
+    #wsText { font-weight: bold; color: #002147; }
+  </style>
+  
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
 </head>
 <body>
-  <h2>🎤 LifeOS Voice Test</h2>
+
+  <h2>🎤 LifeOS Voice Test (Full System Test)</h2>
+
   <button id="startBtn">Start Listening</button>
   <button id="stopBtn" disabled>Stop Listening</button>
 
+  <h3>WebSocket Output:</h3>
+  <div id="wsText">Waiting for AI reply...</div>
+
+  <h3>Audio Output:</h3>
+  <audio id="audioPlayer" controls></audio>
+
+  <h3>Raw Response Log:</h3>
+  <div id="log"></div>
+
   <script>
+    // 2. UPDATE URL TO USE http (socket.io connects this way)
+    const IO_URL = "http://localhost:3000";
+    const API_URL = "http://localhost:3000/api/audio/voice-command";
+
     let mediaRecorder;
     let audioChunks = [];
 
+    // ------------------------------
+    // CONNECT SOCKET.IO
+    // ------------------------------
+    
+    // 3. USE io() TO CONNECT, NOT new WebSocket()
+    const socket = io(IO_URL);
+
+    socket.on('connect', () => console.log("Socket.IO Connected", socket.id));
+    socket.on('connect_error', (e) => console.log("Socket.IO Error:", e));
+
+    // 4. LISTEN FOR YOUR CUSTOM 'play-audio' EVENT
+    socket.on('play-audio', (data) => {
+      // 5. NO JSON.parse() NEEDED! 'data' is already the object.
+      console.log("WS: Received 'play-audio' event", data);
+
+      // This logic now matches what your HTML expects
+      document.getElementById("wsText").innerText =
+        "AI Response: " + data.text;
+
+      if (data.audioUrl) {
+        const audioPlayer = document.getElementById("audioPlayer");
+        // Add a cache-buster to ensure it re-fetches the file
+        audioPlayer.src = data.audioUrl + "?t=" + new Date().getTime();
+        audioPlayer.play();
+      }
+
+      document.getElementById("log").innerText +=
+        "WS: " + JSON.stringify(data, null, 2) + "\n\n";
+    });
+
+    // ------------------------------
+    // RECORD AUDIO (This part was correct, no changes needed)
+    // ------------------------------
     document.getElementById("startBtn").onclick = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorder = new MediaRecorder(stream);
@@ -25,14 +81,26 @@
         const formData = new FormData();
         formData.append("audio", audioBlob, "voice.webm");
 
-        const res = await fetch("http://localhost:3000/api/audio/voice-command", {
-          method: "POST",
-          body: formData
-        });
+        document.getElementById("log").innerText += "HTTP: Sending audio...\n\n";
+        
+        try {
+          const res = await fetch(API_URL, {
+            method: "POST",
+            body: formData
+          });
 
-        const data = await res.json();
-        console.log("Transcription:", data);
-        alert("You said: " + data.text);
+          const data = await res.json();
+          console.log("Transcription Response:", data);
+
+          // This log shows the *HTTP* response (e.g., the transcription)
+          document.getElementById("log").innerText +=
+            "HTTP: " + JSON.stringify(data, null, 2) + "\n\n";
+        
+        } catch (error) {
+          console.error("Error sending audio:", error);
+          document.getElementById("log").innerText +=
+            "HTTP ERROR: " + error.message + "\n\n";
+        }
       };
 
       mediaRecorder.start();
@@ -46,5 +114,6 @@
       document.getElementById("stopBtn").disabled = true;
     };
   </script>
+
 </body>
 </html>

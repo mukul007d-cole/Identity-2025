@@ -1,0 +1,425 @@
+Here is every part of the code you need for the complete, final Android app.
+
+
+
+File 1: app/build.gradle (Module: app)
+You only need to add one line to your dependencies block.
+
+Gradle
+
+dependencies {
+    // ... other dependencies
+    
+    implementation "com.squareup.okhttp3:okhttp:4.12.0"
+    
+    // ADD THIS LINE for Socket.IO
+    implementation 'io.socket:socket.io-client:2.1.0'
+}
+
+
+
+File 2: app/src/main/AndroidManifest.xml
+This is the complete, final manifest file.
+
+XML
+
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.your.package.name"> <!-- IMPORTANT: Change this to your package name -->
+
+    <!-- 1. Permission for internet access -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 2. Permissions to run in the background -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!-- 3. Permission to show the persistent notification -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppCompat"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
+
+        <!-- 4. Declare your Service -->
+        <service
+            android:name=".AudioReceiverService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <!-- 5. Declare your Main Activity -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
+
+
+File 3: app/src/main/res/layout/activity_main.xml
+This is the UI.
+
+XML
+
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/labelIp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Server IP Address:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <EditText
+        android:id="@+id/ipAddressInput"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="e.g., 192.168.1.10"
+        android:inputType="textUri"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toStartOf="@+id/saveButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/labelIp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"/>
+
+    <Button
+        android:id="@+id/saveButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Save"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBaseline_toBaselineOf="@+id/ipAddressInput" />
+
+    <Button
+        android:id="@+id/startButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Start Service"
+        android:layout_marginTop="32dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/ipAddressInput" />
+
+    <Button
+        android:id="@+id/stopButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Stop Service"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/startButton" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+
+
+File 4: app/src/main/java/com/your/package/name/MainActivity.java
+This is the logic for your main screen.
+
+Java
+
+package com.your.package.name; // IMPORTANT: Change this to your package name
+
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Build;
+import android.os.Bundle;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    // Define a key for saving the IP in storage
+    public static final String PREFS_NAME = "AudioAppPrefs";
+    public static final String PREF_KEY_IP = "server_ip";
+
+    private EditText ipAddressInput;
+    private SharedPreferences prefs;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        ipAddressInput = findViewById(R.id.ipAddressInput);
+        Button saveButton = findViewById(R.id.saveButton);
+        Button startButton = findViewById(R.id.startButton);
+        Button stopButton = findViewById(R.id.stopButton);
+
+        // Load the saved IP address when the app starts
+        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String savedIp = prefs.getString(PREF_KEY_IP, ""); // Get saved IP, or "" if none
+        ipAddressInput.setText(savedIp);
+
+        saveButton.setOnClickListener(v -> {
+            // Save the IP address to SharedPreferences
+            String ip = ipAddressInput.getText().toString();
+            prefs.edit().putString(PREF_KEY_IP, ip).apply();
+            Toast.makeText(this, "IP Address Saved!", Toast.LENGTH_SHORT).show();
+        });
+
+        startButton.setOnClickListener(v -> {
+            // Get the *current* IP from the text box
+            String ip = ipAddressInput.getText().toString();
+            if (ip.isEmpty()) {
+                Toast.makeText(this, "Please enter and save an IP address first.", Toast.LENGTH_LONG).show();
+                return;
+            }
+            // Save it just in case it was just typed
+            prefs.edit().putString(PREF_KEY_IP, ip).apply();
+            startAudioService(ip);
+        });
+
+        stopButton.setOnClickListener(v -> {
+            stopAudioService();
+        });
+    }
+
+    private void startAudioService(String ipAddress) {
+        Intent serviceIntent = new Intent(this, AudioReceiverService.class);
+        // Put the IP address into the Intent so the service can read it
+        serviceIntent.putExtra("SERVER_IP", ipAddress);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent);
+        } else {
+            startService(serviceIntent);
+        }
+    }
+
+    private void stopAudioService() {
+        Intent serviceIntent = new Intent(this, AudioReceiverService.class);
+        stopService(serviceIntent);
+    }
+}
+
+
+File 5: app/src/main/java/com/your/package/name/AudioReceiverService.java
+This is the complete code for the background service.
+
+Java
+
+package com.your.package.name; // IMPORTANT: Change this to your package name
+
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Intent;
+import android.media.AudioAttributes;
+import android.media.MediaPlayer;
+import android.os.Build;
+import android.os.IBinder;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
+
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+
+import io.socket.client.IO;
+import io.socket.client.Socket;
+
+public class AudioReceiverService extends Service {
+
+    private static final String TAG = "AudioService";
+    private static final String CHANNEL_ID = "AudioServiceChannel";
+    private static final int NOTIFICATION_ID = 1;
+
+    private Socket mSocket;
+    private MediaPlayer mediaPlayer;
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        initMediaPlayer();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        // Get the IP address passed from MainActivity
+        String serverIp = intent.getStringExtra("SERVER_IP");
+
+        // If the IP is null (e.g., system restart), stop the service
+        if (serverIp == null || serverIp.isEmpty()) {
+            Log.e(TAG, "Service started without an IP. Stopping.");
+            stopSelf();
+            return START_NOT_STICKY; // Don't restart
+        }
+
+        // IMPORTANT: Socket.IO needs 'http://' and your port (e.g., 8080)
+        // It will upgrade the connection to WebSocket automatically.
+        String serverUrl = "http://" + serverIp + ":8080"; // Change 8080 if needed
+
+        Log.d(TAG, "Service starting, connecting to: " + serverUrl);
+
+        // 1. Create the Notification Channel
+        createNotificationChannel();
+
+        // 2. Create the persistent notification
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
+
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Audio Receiver")
+                .setContentText("Connected to: " + serverIp) // Show the IP
+                .setSmallIcon(R.mipmap.ic_launcher) // Use your app's icon
+                .setContentIntent(pendingIntent)
+                .build();
+
+        // 3. Start the service in the foreground
+        startForeground(NOTIFICATION_ID, notification);
+
+        // 4. Start our new Socket.IO connection
+        initSocketIO(serverUrl);
+
+        // 5. Tell the OS to restart this service if it's killed
+        return START_STICKY;
+    }
+
+    private void initSocketIO(String serverUrl) {
+        try {
+            // Disconnect and clean up any old socket
+            if (mSocket != null) {
+                mSocket.disconnect();
+                mSocket.off();
+            }
+
+            // Create the socket instance
+            mSocket = IO.socket(serverUrl);
+
+            // --- Register Listeners ---
+
+            // Listen for the 'connect' event
+            mSocket.on(Socket.EVENT_CONNECT, args -> {
+                Log.d(TAG, "Socket.IO connection opened!");
+            });
+
+            // Listen for our custom 'play-audio' event from the server
+            mSocket.on("play-audio", args -> {
+                Log.d(TAG, "Received 'play-audio' event");
+                if (args.length > 0 && args[0] instanceof JSONObject) {
+                    JSONObject payload = (JSONObject) args[0];
+                    String url = payload.optString("url");
+                    if (url != null && !url.isEmpty()) {
+                        playAudio(url);
+                    }
+                }
+            });
+
+            // Listen for 'disconnect' event
+            mSocket.on(Socket.EVENT_DISCONNECT, args -> {
+                Log.d(TAG, "Socket.IO connection closed.");
+            });
+
+            // Listen for connection errors
+            mSocket.on(Socket.EVENT_CONNECT_ERROR, args -> {
+                Log.e(TAG, "Socket.IO connection error: " + (args.length > 0 ? args[0] : "Unknown"));
+            });
+
+            // --- End Listeners ---
+
+            // Finally, connect
+            mSocket.connect();
+
+        } catch (URISyntaxException e) {
+            Log.e(TAG, "Invalid Socket.IO server URL", e);
+        }
+    }
+
+    private void initMediaPlayer() {
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setAudioAttributes(
+                new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .build()
+        );
+    }
+
+    private void playAudio(String url) {
+        try {
+            if (mediaPlayer.isPlaying()) {
+                mediaPlayer.stop();
+            }
+            mediaPlayer.reset();
+            mediaPlayer.setDataSource(url);
+            mediaPlayer.setOnPreparedListener(MediaPlayer::start); // Play when ready
+            mediaPlayer.prepareAsync(); // Prepare audio stream
+        } catch (IOException e) {
+            Log.e(TAG, "Error setting data source", e);
+        }
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel serviceChannel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Audio Service Channel",
+                    NotificationManager.IMPORTANCE_LOW // Use LOW to avoid sound/vibration
+            );
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            manager.createNotificationChannel(serviceChannel);
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "Service destroyed");
+        // Clean up Socket.IO
+        if (mSocket != null) {
+            mSocket.disconnect();
+            mSocket.off(); // Remove all listeners
+        }
+        // Clean up MediaPlayer
+        if (mediaPlayer != null) {
+            if (mediaPlayer.isPlaying()) {
+                mediaPlayer.stop();
+            }
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
+}
