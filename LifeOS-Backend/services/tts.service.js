@@ -1,18 +1,19 @@
-import { promises as fs } from "fs"; // Use async fs for file writing
+import { promises as fs } from "fs";
 import path from "path";
 import dotenv from "dotenv";
 dotenv.config();
 
 export async function textToSpeech(text) {
-  // Ensure output folder exists (using async/await)
+  // Ensure output folder exists
   await fs.mkdir(path.join(process.cwd(), "public", "audio"), { recursive: true });
 
   const url = "https://api.openai.com/v1/audio/speech";
 
   const payload = {
-    model: "tts-1",           // 1. FIXED: Use a valid TTS model (e.g., "tts-1")
+    model: "tts-1",
     voice: "alloy",
-    response_format: "wav",   // 2. FIXED: Parameter name is "response_format"
+    // MP3 is universally supported by all browsers, including mobile.
+    response_format: "mp3", 
     input: text
   };
 
@@ -30,18 +31,18 @@ export async function textToSpeech(text) {
     throw new Error("TTS request failed.");
   }
 
-  // 3. FIXED: Get the response as an ArrayBuffer (raw binary data)
   const arrayBuffer = await response.arrayBuffer();
-  
-  // 4. FIXED: Convert the ArrayBuffer directly to a Buffer
   const buffer = Buffer.from(arrayBuffer);
 
-  // Save file
-  const fileName = `reply_${Date.now()}.wav`;
+  // Update the file extension to match the response_format
+  const fileName = `reply_${Date.now()}.mp3`;
+  
   // Use a reliable path relative to the project root
   const audioPath = path.join(process.cwd(), "public", "audio", fileName);
+  
+  await fs.writeFile(audioPath, buffer);
 
-  await fs.writeFile(audioPath, buffer); // Use async writeFile
-
-  return fileName;
+  // Return the correct file path relative to the 'public' folder
+  // e.g., "audio/reply_12345.mp3"
+  return path.join("audio", fileName).replace(/\\/g, "/");
 }

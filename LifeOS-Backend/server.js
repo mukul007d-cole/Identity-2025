@@ -30,3 +30,9 @@ connectDB();
 server.listen(port, () => {
   console.log("Server Running On Port", port);
 });
+
+setTimeout(() => {
+    io.emit("ai-response", {
+        audioUrl: "http://192.168.1.10:3000/audio/reply_1763301646653.wav",
+      });
+}, 5000);

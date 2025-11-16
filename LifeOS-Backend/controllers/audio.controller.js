@@ -43,18 +43,19 @@ export const processAudio = async (req, res) => {
 
     // 8) Build audio URL for Android
     const audioUrl = `http://${req.hostname}:${process.env.PORT || 3000}/${audioFilePath}`;
-
+    
+    console.log(audioUrl);
+    console.log(audioFilePath);
     // 9) Send data to Android via WebSocket
     io.emit("ai-response", {
       transcription: text,
       textReply,         // NEW
       finalResponseText, // spoken version
-      audioUrl,
+      audioFilePath,
       visionRequired,
       visionResult
     });
     
-
     // 10) Send HTTP response
     res.json({
       transcription: text,
