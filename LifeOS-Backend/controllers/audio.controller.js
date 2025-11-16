@@ -9,17 +9,16 @@ import { io } from "../server.js";
 
 export const processAudio = async (req, res) => {
   try {
-    // 1) Convert audio → text
+    
     const text = await speechToText(req.file.buffer);
 
-    // 2) Log input
+    
     await InputLog.create({
       text,
       source: "pc-mic",
       type: "voice",
     });
 
-    // 3) Vision intent check
     const visionRequired = await needsVision(text);
     let visionResult = null;
 
@@ -54,6 +53,7 @@ export const processAudio = async (req, res) => {
       visionRequired,
       visionResult
     });
+    
 
     // 10) Send HTTP response
     res.json({
