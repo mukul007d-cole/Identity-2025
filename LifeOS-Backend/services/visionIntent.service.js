@@ -9,11 +9,13 @@ The possible intents are:
 1. "remember_face": User wants to save a face. (e.g., "Remember this person as Bob", "This is Alice")
 2. "recognize_face": User wants to identify a face. (e.g., "Do I know this person?", "Who is this?")
 3. "general_vision": User is asking about what they see, but not a person. (e.g., "What is this?", "Read this sign")
-4. "general_text": User is asking a question that requires no vision. (e.g., "What's the weather?", "Who won the game?")
+4. "start_note": User wants to begin taking a note. (e.g., "Take a note", "Jot this down", "Remember this")
+5. "general_text": User is asking a question that requires no vision. (e.g., "What's the weather?", "Who won the game?")
 
 Rules:
 - If the intent is "remember_face", extract the name into the payload. If no name is clear, set payload.name to "unknown".
 - For all other intents, the payload can be null.
+- For "start_note", the payload is null.
 
 User text: "Remember this is my friend Alice"
 {"intent": "remember_face", "payload": {"name": "Alice"}}
@@ -30,13 +32,15 @@ User text: "What is that building?"
 User text: "This is Bob"
 {"intent": "remember_face", "payload": {"name": "Bob"}}
 
+User text: "Take a note"
+{"intent": "start_note", "payload": null}
+
 User text: "{{USER_TEXT_HERE}}"
 `;
 
 export const getIntent = async (text) => {
   const prompt = INTENT_CLASSIFIER_PROMPT.replace("{{USER_TEXT_HERE}}", text);
   
-  // We ask Gemini to classify the intent
   const response = await askGemini(prompt, 0); // 0 temperature for strict JSON
   
   try {
