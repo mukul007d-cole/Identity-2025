@@ -1,64 +1,105 @@
 import { speechToText } from "../services/asr.service.js";
 import { textToSpeech } from "../services/tts.service.js";
 import InputLog from "../db/models/inputLog.model.js";
-import { needsVision } from "../services/visionIntent.service.js";
 import { captureImageFromESP32 } from "../services/esp32.service.js";
 import { analyzeImage } from "../services/vision.service.js";
 import { askGemini } from "../services/textreply.service.js";
 import { io } from "../server.js";
+import { getIntent } from "../services/visionIntent.service.js";
+import { addFace, recognizeFace } from "../services/face.service.js"; 
 
 export const processAudio = async (req, res) => {
+  let transcription, finalResponseText, visionRequired, visionResult, textReply;
+  visionRequired = false;
+  visionResult = null;
+  textReply = null;
+  
   try {
-    
-    const text = await speechToText(req.file.buffer);
+    // 1) Transcribe speech to text
+    transcription = await speechToText(req.file.buffer);
 
-    
+    // 2) Log the transcription
     await InputLog.create({
-      text,
+      text: transcription,
       source: "pc-mic",
       type: "voice",
     });
 
-    const visionRequired = await needsVision(text);
-    let visionResult = null;
+    // 3) Get the user's INTENT
+    const intentData = await getIntent(transcription);
+    console.log("Intent:", intentData);
 
-    // 4) Capture + analyze image if needed
-    if (visionRequired) {
-      const imageBuffer = await captureImageFromESP32();
-      visionResult = await analyzeImage(imageBuffer, text);
+    let imageBuffer = null;
+
+    // 4) Use a 'switch' to handle the intent
+    switch (intentData.intent) {
+      
+      case "remember_face":
+        visionRequired = true;
+        const name = intentData.payload.name || "unknown";
+        
+        console.log(`Intent: Remember face for ${name}`);
+        imageBuffer = await captureImageFromESP32();
+        const newFace = await addFace(imageBuffer, name);
+        
+        if (newFace) {
+          finalResponseText = `Okay, I'll remember this person as ${name}.`;
+        } else {
+          finalResponseText = "Sorry, I had trouble saving that face.";
+        }
+        break;
+
+      case "recognize_face":
+        visionRequired = true;
+        
+        console.log("Intent: Recognize face");
+        imageBuffer = await captureImageFromESP32();
+        const recognizedName = await recognizeFace(imageBuffer);
+        
+        if (recognizedName) {
+          finalResponseText = `I recognize this person. This is ${recognizedName}.`;
+        } else {
+          finalResponseText = "I don't seem to recognize this person.";
+        }
+        break;
+
+      case "general_vision":
+        visionRequired = true;
+        
+        console.log("Intent: General vision query");
+        imageBuffer = await captureImageFromESP32();
+        visionResult = await analyzeImage(imageBuffer, transcription);
+        finalResponseText = visionResult; // Speak the vision result
+        
+        // Also get a text reply for context
+        textReply = await askGemini(transcription); 
+        break;
+
+      case "general_text":
+      default:
+        console.log("Intent: General text query");
+        textReply = await askGemini(transcription);
+        finalResponseText = textReply; // Speak the text reply
+        break;
     }
 
-    // 5) ALWAYS ask Gemini for a normal text reply
-    const textReply = await askGemini(text);
-
-    // 6) Decide what we will speak out loud
-    // If vision was requested → speak the vision result
-    // But keep Gemini normal reply SEPARATELY
-    const finalResponseText = visionRequired && visionResult
-      ? visionResult
-      : textReply;
-
-    // 7) Convert finalResponseText → audio
+    // 5) Convert the FINAL response to audio
     const audioFilePath = await textToSpeech(finalResponseText);
-
-    // 8) Build audio URL for Android
     const audioUrl = `http://${req.hostname}:${process.env.PORT || 3000}/${audioFilePath}`;
-    
-    console.log(audioUrl);
-    console.log(audioFilePath);
-    // 9) Send data to Android via WebSocket
+
+    // 6) Send data to clients via WebSocket
     io.emit("ai-response", {
-      transcription: text,
-      textReply,         // NEW
-      finalResponseText, // spoken version
+      transcription: transcription,
+      textReply,          // The "chat" reply (if any)
+      finalResponseText,  // The text that was spoken
       audioFilePath,
       visionRequired,
-      visionResult
+      visionResult,       // The vision analysis (if any)
     });
-    
-    // 10) Send HTTP response
+
+    // 7) Send HTTP response
     res.json({
-      transcription: text,
+      transcription: transcription,
       visionRequired,
       visionResult,
       textReply,
@@ -68,6 +109,11 @@ export const processAudio = async (req, res) => {
 
   } catch (e) {
     console.error("Audio Controller Error:", e);
-    res.status(500).json({ error: "Audio processing failed" });
+    // Send error response
+    const errorMsg = "Sorry, I ran into an error.";
+    const audioFilePath = await textToSpeech(errorMsg);
+    const audioUrl = `http://${req.hostname}:${process.env.PORT || 3000}/${audioFilePath}`;
+    
+    res.status(500).json({ error: e.message, finalResponseText: errorMsg, audioUrl });
   }
 };
