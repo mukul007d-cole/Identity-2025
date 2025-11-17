@@ -5,7 +5,7 @@ import { captureImageFromESP32 } from "../services/esp32.service.js";
 import { analyzeImage, compareFaces } from "../services/vision.service.js";
 import { askGemini } from "../services/textreply.service.js";
 import { io } from "../server.js";
-import { getIntent } from "../services/intent.service.js";
+import { getIntent } from "../services/visionIntent.service.js";
 import { addFace, recognizeFace } from "../services/face.service.js";
 import Note from "../db/models/note.model.js"; // <-- 1. IMPORT NOTE MODEL
 
