@@ -7,7 +7,7 @@ import { askGemini } from "../services/textreply.service.js";
 import { io } from "../server.js";
 import { getIntent } from "../services/visionIntent.service.js";
 import { addFace, recognizeFace } from "../services/face.service.js";
-import Note from "../db/models/note.model.js"; // <-- 1. IMPORT NOTE MODEL
+import Note from "../db/models/note.model.js"; 
 
 let conversationState = null;
 
@@ -16,55 +16,54 @@ export const processAudio = async (req, res) => {
   visionRequired = false;
   visionResult = null;
   textReply = null;
-  
+
+  let logType = "voice"; // Default type
+  let logMetadata = {};  // To store intent info or image data
+  let imageBuffer = null; // To hold the raw image if captured
+
   try {
-    // 1) Transcribe speech to text
+    // 1. Transcribe Audio
     transcription = await speechToText(req.file.buffer);
 
-    // 2) Log the transcription
-    await InputLog.create({
-      text: transcription,
-      source: "pc-mic",
-      type: "voice",
-    });
-
-    // 3. <-- NEW: Check if we are in a multi-turn conversation
+    // 2. Check Conversation State (Context)
     if (conversationState === "awaiting_note_content") {
       
-      // The user's speech IS the note content
       await Note.create({ content: transcription });
       
       finalResponseText = "Got it. Saved to your notes.";
-      
-      // Clear the state
       conversationState = null; 
-      
-      // We are done. We skip all other logic.
-      // The code will jump to step 5 (TTS)
+
+      // LOGGING SETUP: This was a command completion
+      logType = "command";
+      logMetadata = { action: "create_note", content: transcription };
+
     } else {
-      // 4. <-- NORMAL FLOW: Get the user's INTENT
+      // 3. Normal Flow: Get Intent
       const intentData = await getIntent(transcription);
       console.log("Intent:", intentData);
 
-      let imageBuffer = null;
+      // Store intent in metadata
+      logMetadata.intent = intentData.intent;
+      logMetadata.payload = intentData.payload;
 
-      // 5) Use a 'switch' to handle the intent
+      // 4. Handle Intents
       switch (intentData.intent) {
         
-        // --- Our new case ---
         case "start_note":
           console.log("Intent: Start note session");
-          // Set the state for the *next* request
           conversationState = "awaiting_note_content"; 
           finalResponseText = "Okay, what's the note?";
+          
+          logType = "command";
           break;
 
         case "remember_face":
-          // ... (your existing face code)
           visionRequired = true;
+          logType = "image"; // Input involved vision
+
           const name = intentData.payload.name || "unknown";
-          
           console.log(`Intent: Remember face for ${name}`);
+          
           imageBuffer = await captureImageFromESP32();
           const newFace = await addFace(imageBuffer, name);
           
@@ -76,47 +75,66 @@ export const processAudio = async (req, res) => {
           break;
 
         case "recognize_face":
-          // ... (your existing face code)
           visionRequired = true;
-          
+          logType = "image";
+
           console.log("Intent: Recognize face");
           imageBuffer = await captureImageFromESP32();
           const recognizedName = await recognizeFace(imageBuffer);
           
           if (recognizedName) {
             finalResponseText = `I recognize this person. This is ${recognizedName}.`;
+            logMetadata.recognizedPerson = recognizedName;
           } else {
             finalResponseText = "I don't seem to recognize this person.";
+            logMetadata.recognizedPerson = "unknown";
           }
           break;
 
         case "general_vision":
-          // ... (your existing vision code)
           visionRequired = true;
-          
+          logType = "image";
+
           console.log("Intent: General vision query");
           imageBuffer = await captureImageFromESP32();
           visionResult = await analyzeImage(imageBuffer, transcription);
+          
           finalResponseText = visionResult; 
           textReply = await askGemini(transcription); 
+          
+          logMetadata.analysisResult = visionResult;
           break;
 
         case "general_text":
         default:
-          // ... (your existing text code)
           console.log("Intent: General text query");
           textReply = await askGemini(transcription);
           finalResponseText = textReply;
+          
+          logType = "voice";
           break;
       }
-    } // --- End of the main "if (conversationState)" block ---
+    }
 
+    // 5. SAVE TO DATABASE
+    // If we have an image buffer, convert to Base64 to store in metadata
+    if (imageBuffer) {
+      logMetadata.capturedImage = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+    }
 
-    // 6) Convert the FINAL response to audio
+    await InputLog.create({
+      text: transcription,
+      source: "pc-mic", // Or dynamically change if you pass source in headers
+      type: logType,    // "voice", "command", or "image"
+      metadata: logMetadata
+    });
+    console.log(`Log saved. Type: ${logType}`);
+
+    // 6. TTS Generation
     const audioFilePath = await textToSpeech(finalResponseText);
     const audioUrl = `http://${req.hostname}:${process.env.PORT || 3000}/${audioFilePath}`;
 
-    // 7) Send data to clients via WebSocket
+    // 7. WebSocket Emission
     io.emit("ai-response", {
       transcription: transcription,
       textReply,          
@@ -126,7 +144,7 @@ export const processAudio = async (req, res) => {
       visionResult,
     });
 
-    // 8) Send HTTP response
+    // 8. HTTP Response
     res.json({
       transcription: transcription,
       visionRequired,
@@ -138,14 +156,16 @@ export const processAudio = async (req, res) => {
 
   } catch (e) {
     console.error("Audio Controller Error:", e);
-    // Clear state on error to prevent getting stuck
     conversationState = null; 
     
-    // ... (your existing error response) ...
     const errorMsg = "Sorry, I ran into an error.";
-    const audioFilePath = await textToSpeech(errorMsg);
-    const audioUrl = `http://${req.hostname}:${process.env.PORT || 3000}/${audioFilePath}`;
-    
-    res.status(500).json({ error: e.message, finalResponseText: errorMsg, audioUrl });
+
+    try {
+        const audioFilePath = await textToSpeech(errorMsg);
+        const audioUrl = `http://${req.hostname}:${process.env.PORT || 3000}/${audioFilePath}`;
+        res.status(500).json({ error: e.message, finalResponseText: errorMsg, audioUrl });
+    } catch (ttsError) {
+        res.status(500).json({ error: e.message, finalResponseText: errorMsg });
+    }
   }
 };

@@ -1,6 +1,6 @@
-import { askGemini } from "./textreply.service.js"; // We can reuse this!
+import { askGemini } from "./textreply.service.js"; 
 
-// This prompt is the new "brain" for your controller.
+
 const INTENT_CLASSIFIER_PROMPT = `
 You are an intent classifier for an AI assistant.
 Your job is to analyze the user's text and return a JSON object with the "intent" and a "payload" if necessary.
@@ -41,16 +41,16 @@ User text: "{{USER_TEXT_HERE}}"
 export const getIntent = async (text) => {
   const prompt = INTENT_CLASSIFIER_PROMPT.replace("{{USER_TEXT_HERE}}", text);
   
-  const response = await askGemini(prompt, 0); // 0 temperature for strict JSON
+  const response = await askGemini(prompt, 0); 
   
   try {
-    // Clean up the response to get pure JSON
+   
     const jsonResponse = response.match(/\{.*\}/s)[0];
     const intentData = JSON.parse(jsonResponse);
     return intentData;
   } catch (e) {
     console.error("Failed to parse intent from LLM:", e);
-    // Fallback for safety
+    
     return { intent: "general_text", payload: null };
   }
 };
