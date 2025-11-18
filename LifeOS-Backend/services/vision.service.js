@@ -1,24 +1,18 @@
-// No Google library import needed
-
 export const analyzeImage = async (imageBuffer, userText) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    // ✅ NOTE: Corrected model to a valid one that handles vision.
     const model = "gemini-1.5-flash-latest"; 
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    // 1. Build the prompt text
     const prompt = `
 User said: "${userText}"
 Use the image to answer the user's request.
 Keep the answer short, helpful, clear.
 `;
 
-    // 2. Convert the image buffer to base64
     const imageBase64 = imageBuffer.toString("base64");
 
-    // 3. Build the REST API request body
     const requestBody = {
       contents: [
         {
