@@ -1,0 +1,10 @@
+PSRAM found: YES
+Connecting to WiFi SSID: IQOOZ6
+======================================
+ESP32-CAM Web Server Running At:
+IP: 10.15.253.176
+PORT: 80
+➤ Capture URL:   http://10.15.253.176/capture
+➤ Location URL:  http://10.15.253.176/location
+======================================
+HTTP server started on port 80
