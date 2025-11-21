@@ -1,7 +1,7 @@
 export const analyzeImage = async (imageBuffer, userText) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    const model = "gemini-1.5-flash-latest"; 
+    const model = "gemini-2.0-flash"; 
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
@@ -69,7 +69,7 @@ Keep the answer short, helpful, clear.
 export const compareFaces = async (image1, image2) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    const model = "gemini-1.5-flash-latest"; 
+    const model = "gemini-2.0-flash"; 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const prompt = "You are a face comparison expert. Look at the two images provided. Are they of the same person? Please answer with only the word 'yes' or 'no'.";

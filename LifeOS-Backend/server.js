@@ -18,10 +18,10 @@ export const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  console.log("Android Connected:", socket.id);
+  console.log("Audio Output Connected:", socket.id);
 
   socket.on("disconnect", () => {
-    console.log("Android Disconnected:", socket.id);
+    console.log("Audio Output Disconnected:", socket.id);
   });
 });
 

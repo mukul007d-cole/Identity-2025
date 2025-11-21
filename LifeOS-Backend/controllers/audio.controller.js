@@ -15,7 +15,7 @@ export const processAudio = async (req, res) => {
   let transcription, finalResponseText, visionRequired, visionResult, textReply;
   visionRequired = false;
   visionResult = null;
-  textReply = null;
+  textReply = null; // Initialize as null
 
   let logType = "voice"; // Default type
   let logMetadata = {};  // To store intent info or image data
@@ -97,10 +97,15 @@ export const processAudio = async (req, res) => {
 
           console.log("Intent: General vision query");
           imageBuffer = await captureImageFromESP32();
+          
+          // 1. Get the analysis from vision service
           visionResult = await analyzeImage(imageBuffer, transcription);
           
+          // 2. Set the final text to the vision result
           finalResponseText = visionResult; 
-          textReply = await askGemini(transcription); 
+          
+          // CHANGED HERE: Removed 'textReply = await askGemini(transcription);'
+          // We do not want a text-only reply here, because the vision result is the answer.
           
           logMetadata.analysisResult = visionResult;
           break;
