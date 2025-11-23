@@ -10,20 +10,37 @@ import { addFace, recognizeFace } from "../services/face.service.js";
 import Note from "../db/models/note.model.js"; 
 
 let conversationState = null;
+let imageBuffer;
+let logType;
+let finalResponseText;
+let textReply;
+let visionRequired;
+let visionResult;
+function logMetadata(label, data = null) {
+  console.log("\n==============================");
+  console.log(`📦 ${label}`);
+  if (data) console.log(data);
+  console.log("==============================\n");
+}
+
 
 export const processAudio = async (req, res) => {
-  let transcription, finalResponseText, visionRequired, visionResult, textReply;
-  visionRequired = false;
-  visionResult = null;
-  textReply = null; // Initialize as null
-
-  let logType = "voice"; // Default type
-  let logMetadata = {};  // To store intent info or image data
-  let imageBuffer = null; // To hold the raw image if captured
-
   try {
-    // 1. Transcribe Audio
-    transcription = await speechToText(req.file.buffer);
+    if (!req.file) {
+      throw new Error("No audio uploaded");
+    }
+
+
+    console.log("=== AUDIO RECEIVED ===");
+    console.log("Buffer:", req.file.buffer?.length, "bytes");
+    console.log("MIME:", req.file.mimetype);
+    console.log("Name:", req.file.originalname);
+
+    // IMPORTANT: PASS MIME TYPE!!!
+    const transcription = await speechToText(
+      req.file.buffer,
+      req.file.mimetype
+    );
 
     // 2. Check Conversation State (Context)
     if (conversationState === "awaiting_note_content") {
@@ -64,7 +81,7 @@ export const processAudio = async (req, res) => {
           const name = intentData.payload.name || "unknown";
           console.log(`Intent: Remember face for ${name}`);
           
-          imageBuffer = await captureImageFromESP32();
+         imageBuffer = await captureImageFromESP32();
           const newFace = await addFace(imageBuffer, name);
           
           if (newFace) {
@@ -113,9 +130,8 @@ export const processAudio = async (req, res) => {
         case "general_text":
         default:
           console.log("Intent: General text query");
-          textReply = await askGemini(transcription);
+          let textReply = await askGemini(transcription);
           finalResponseText = textReply;
-          
           logType = "voice";
           break;
       }
@@ -136,6 +152,7 @@ export const processAudio = async (req, res) => {
     console.log(`Log saved. Type: ${logType}`);
 
     // 6. TTS Generation
+    console.log(finalResponseText)
     const audioFilePath = await textToSpeech(finalResponseText);
     const audioUrl = `http://${req.hostname}:${process.env.PORT || 3000}/${audioFilePath}`;
 

@@ -7,17 +7,19 @@ export async function askGemini(text) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   
       const requestBody = {
+        systemInstruction: {
+          parts: [
+            { text: "You are LifeOS AI assistant a smart glass. Reply concisely and be helpful." }
+          ]
+        },
         contents: [
           {
             role: "user",
-            parts: [
-              {
-                text: text,
-              },
-            ],
-          },
-        ],
+            parts: [{ text }]
+          }
+        ]
       };
+      
   
       const response = await fetch(url, {
         method: "POST",
