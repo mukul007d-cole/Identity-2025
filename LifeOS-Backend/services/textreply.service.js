@@ -1,4 +1,3 @@
-
 export async function askGemini(text) {
     try {
       const apiKey = process.env.GEMINI_API_KEY;

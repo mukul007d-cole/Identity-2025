@@ -527,23 +527,7 @@ const Assistant: React.FC = () => {
             </Card>
 
             {/* Recent Captures */}
-            <Card className="glass-card border-0">
-              <CardContent className="p-4">
-                <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Recent Captures</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {state.messages.filter((m: any) => m.imageUrl).slice(0,4).map((m: any) => (
-                    <div key={m.id} className="aspect-square rounded-lg overflow-hidden bg-muted">
-                      <img src={m.imageUrl} alt="Capture" className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                  {state.messages.filter((m: any) => m.imageUrl).length === 0 && (
-                    <div className="col-span-2 aspect-square rounded-lg bg-muted flex items-center justify-center">
-                      <ImageIcon className="w-8 h-8 text-muted-foreground/50" />
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            
           </div>
 
           {/* Main Chat Area */}

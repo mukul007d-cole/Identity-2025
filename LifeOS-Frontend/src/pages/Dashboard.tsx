@@ -1,12 +1,23 @@
-import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Mic, Image, Users, FileText } from 'lucide-react';
-
+import { useState , useEffect } from 'react';
 const Dashboard = () => {
   const { state } = useApp();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [notescount,addnotescount] = useState(0);
+  const [imagecount,addimagecount] = useState(0);
+  const [faceCount,addFaceCount] = useState(0);
+  const [voiceCount,addVoiceCount] = useState(0);
+  
+  useEffect(() => {
+  
+    return () => {
+      
+    }
+  }, [])
+  
 
   const todayStats = {
     voiceInteractions: state.voiceInputs.filter(v => 

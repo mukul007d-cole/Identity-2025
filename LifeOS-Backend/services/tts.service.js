@@ -31,7 +31,7 @@ export async function textToSpeech(text) {
 
   const arrayBuffer = await response.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
-
+  
   const fileName = `reply_${Date.now()}.mp3`;
   
   const audioPath = path.join(process.cwd(), "public", "audio", fileName);
