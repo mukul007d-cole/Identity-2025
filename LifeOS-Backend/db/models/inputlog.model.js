@@ -28,5 +28,6 @@ const inputLogSchema = new mongoose.Schema({
     default: Date.now,
   }
 });
+const InputLog = mongoose.models.InputLog || mongoose.model("InputLog", inputLogSchema);
 
-export default mongoose.model("InputLog", inputLogSchema);
+export default InputLog;

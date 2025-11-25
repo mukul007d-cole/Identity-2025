@@ -1,61 +1,66 @@
-import { useApp } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Mic, Image, Users, FileText } from 'lucide-react';
-import { useState , useEffect } from 'react';
-const Dashboard = () => {
-  const { state } = useApp();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [notescount,addnotescount] = useState(0);
-  const [imagecount,addimagecount] = useState(0);
-  const [faceCount,addFaceCount] = useState(0);
-  const [voiceCount,addVoiceCount] = useState(0);
-  
-  useEffect(() => {
-  
-    return () => {
-      
-    }
-  }, [])
-  
+import { useState, useEffect } from 'react';
+// Removed useApp as we are fetching real data now, or you can keep it if needed for other global state
+// import { useApp } from '@/contexts/AppContext'; 
 
-  const todayStats = {
-    voiceInteractions: state.voiceInputs.filter(v => 
-      new Date(v.timestamp).toDateString() === selectedDate.toDateString()
-    ).length,
-    imagesCaptured: state.savedImages.filter(i => 
-      new Date(i.timestamp).toDateString() === selectedDate.toDateString()
-    ).length,
-    facesRecognized: state.savedFaces.filter(f => 
-      new Date(f.timestamp).toDateString() === selectedDate.toDateString()
-    ).length,
-    notesCreated: state.notes.filter(n => 
-      new Date(n.timestamp).toDateString() === selectedDate.toDateString()
-    ).length,
-  };
+const Dashboard = () => {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  
+  // State for real data
+  const [statsData, setStatsData] = useState({
+    voiceInteractions: 0,
+    imagesCaptured: 0,
+    facesRecognized: 0,
+    notesCreated: 0
+  });
+  const [recentLogs, setRecentLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/stats?date=${selectedDate.toISOString()}`);
+        const data = await response.json();
+
+        if (data && data.counts) {
+          setStatsData(data.counts);
+          setRecentLogs(data.recentActivity || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [selectedDate]); // Re-run when date changes
 
   const stats = [
     {
       title: 'Voice Interactions',
-      value: todayStats.voiceInteractions,
+      value: statsData.voiceInteractions,
       icon: Mic,
       color: 'from-primary to-accent',
     },
     {
       title: 'Images Captured',
-      value: todayStats.imagesCaptured,
+      value: statsData.imagesCaptured,
       icon: Image,
       color: 'from-tech-glow to-tech-glow-secondary',
     },
     {
       title: 'Faces Recognized',
-      value: todayStats.facesRecognized,
+      value: statsData.facesRecognized,
       icon: Users,
       color: 'from-accent to-primary',
     },
     {
       title: 'Notes Created',
-      value: todayStats.notesCreated,
+      value: statsData.notesCreated,
       icon: FileText,
       color: 'from-tech-glow-secondary to-primary',
     },
@@ -84,7 +89,9 @@ const Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{stat.value}</div>
+                  <div className="text-3xl font-bold">
+                    {loading ? "..." : stat.value}
+                  </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {selectedDate.toDateString()}
                   </p>
@@ -116,18 +123,18 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {state.voiceInputs.slice(0, 5).map((input) => (
-                  <div key={input.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                {recentLogs.map((input) => (
+                  <div key={input._id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
                     <Mic className="w-5 h-5 text-primary mt-1" />
                     <div className="flex-1">
                       <p className="text-sm">{input.text}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(input.timestamp).toLocaleString()}
+                        {new Date(input.createdAt).toLocaleString()}
                       </p>
                     </div>
                   </div>
                 ))}
-                {state.voiceInputs.length === 0 && (
+                {!loading && recentLogs.length === 0 && (
                   <p className="text-muted-foreground text-center py-8">
                     No activity yet. Start using your LifeOS glasses!
                   </p>

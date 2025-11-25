@@ -1,6 +1,6 @@
 import { speechToText } from "../services/asr.service.js";
 import { textToSpeech } from "../services/tts.service.js";
-import InputLog from "../db/models/inputLog.model.js";
+import InputLog from "../db/models/inputlog.model.js";
 import { captureImageFromESP32 } from "../services/esp32.service.js";
 import { analyzeImage, compareFaces } from "../services/vision.service.js";
 import { askGemini } from "../services/textreply.service.js";

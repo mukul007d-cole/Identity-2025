@@ -6,14 +6,53 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Moon, Sun, User, Mail, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
 
 const Settings = () => {
   const { state, updateUserDetails, toggleTheme } = useApp();
+  
+  // State to hold real DB data
+  const [dbStats, setDbStats] = useState({
+    images: 0,
+    faces: 0,
+    notes: 0,
+    voice: 0
+  });
 
-  const handleClearData = () => {
+  // Fetch real data on mount
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/settings/stats');
+        if (res.ok) {
+          const data = await res.json();
+          setDbStats(data);
+        }
+      } catch (error) {
+        console.error("Failed to load settings stats", error);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const handleClearData = async () => {
     if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-      localStorage.clear();
-      window.location.reload();
+      try {
+        // 1. Clear Database
+        const res = await fetch('/api/settings/reset', { method: 'DELETE' });
+        
+        if (res.ok) {
+          // 2. Clear Local Storage
+          localStorage.clear();
+          toast.success("System completely reset");
+          // 3. Reload Page
+          window.location.reload();
+        } else {
+          toast.error("Failed to reset database");
+        }
+      } catch (error) {
+        toast.error("Connection error during reset");
+      }
     }
   };
 
@@ -131,19 +170,19 @@ const Settings = () => {
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Saved Images</span>
-              <span className="font-medium">{state.savedImages.length}</span>
+              <span className="font-medium">{dbStats.images}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Saved Faces</span>
-              <span className="font-medium">{state.savedFaces.length}</span>
+              <span className="font-medium">{dbStats.faces}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Notes</span>
-              <span className="font-medium">{state.notes.length}</span>
+              <span className="font-medium">{dbStats.notes}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Voice Inputs</span>
-              <span className="font-medium">{state.voiceInputs.length}</span>
+              <span className="font-medium">{dbStats.voice}</span>
             </div>
           </CardContent>
         </Card>
