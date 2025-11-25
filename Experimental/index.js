@@ -14,8 +14,6 @@
 // const GEMINI_API_URL =
 //   `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-// const GEMINI_API_KEY = "AIzaSyASM5Xz5xBtz-4qSaCksuqwo18unW4tYTc";
-
 // app.post("/process-image", upload.single("file"), async (req, res) => {
 //   try {
 //     if (!GEMINI_API_KEY) {

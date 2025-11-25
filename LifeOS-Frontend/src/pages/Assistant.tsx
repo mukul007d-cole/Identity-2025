@@ -442,9 +442,7 @@ const Assistant: React.FC = () => {
       console.error("manualFlushAndSend error", err);
     }
   };
-
-  // Provide minimal UI controls for connect/disconnect and manual flush
-  // -------------------------
+  
   return (
     <div className="min-h-screen pt-20 pb-8">
       <div className="container mx-auto px-4 max-w-6xl h-[calc(100vh-8rem)]">
@@ -532,102 +530,137 @@ const Assistant: React.FC = () => {
 
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col min-w-0">
-            <div className="mb-4 text-center lg:text-left">
-              <h1 className="text-3xl font-bold gradient-text">LifeOS Assistant</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {recordingIndicatorText()}
-              </p>
-            </div>
+  <div className="mb-4 text-center lg:text-left">
+    <h1 className="text-3xl font-bold gradient-text">LifeOS Assistant</h1>
+    <p className="text-sm text-muted-foreground mt-1">
+      {recordingIndicatorText()}
+    </p>
+  </div>
 
-            <Card className="glass-card border-0 flex-1 mb-4 overflow-hidden">
-              <ScrollArea className="h-full p-6">
-                <div className="space-y-4">
-                  {state.messages.length === 0 && (
-                    <div className="text-center text-muted-foreground py-12">
-                      <Bot className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                      <p>Listening continuously. Speak naturally — recording sends after silence.</p>
-                    </div>
-                  )}
-
-                  {state.messages.map((message: any) => (
-                    <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-gradient-to-br from-primary to-tech-glow-secondary text-white'}`}>
-                        {message.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-                      </div>
-
-                      <div className={`flex-1 ${message.role === 'user' ? 'items-end' : 'items-start'} flex flex-col`}>
-                        {message.imageUrl && (
-                          <div className="mb-2 rounded-lg overflow-hidden max-w-xs">
-                            <img src={message.imageUrl} alt="Shared" className="w-full" />
-                          </div>
-                        )}
-                        <div className={`rounded-2xl px-4 py-2 max-w-[80%] ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                          <p className="text-sm">{message.content}</p>
-                        </div>
-                        <span className="text-xs text-muted-foreground mt-1 px-2">{new Date(message.timestamp).toLocaleTimeString()}</span>
-                      </div>
-                    </div>
-                  ))}
-
-                  {currentTranscript && (
-                    <div className="flex gap-3 flex-row-reverse">
-                      <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
-                        <User className="w-4 h-4" />
-                      </div>
-                      <div className="bg-primary/50 text-primary-foreground rounded-2xl px-4 py-2 max-w-[80%]">
-                        <p className="text-sm italic">{currentTranscript}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {isSpeaking && (
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-tech-glow-secondary text-white flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-4 h-4" />
-                      </div>
-                      <div className="bg-muted rounded-2xl px-4 py-2">
-                        <div className="flex gap-1">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-            </Card>
-
-            {/* Controls: manual flush + optional mic toggle */}
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <div className="mt-4 flex items-center gap-3 p-3 bg-muted/40 backdrop-blur-lg rounded-2xl border border-border">
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground">Always listening. I'll send your speech after {SILENCE_MS / 1000}s of silence.</p>
-                  </div>
-
-                  <Button onClick={() => manualFlushAndSend()}>Send Now</Button>
-                </div>
-              </div>
-
-              <div className="w-36 flex items-center justify-end">
-                <Button onClick={() => {
-                  // quick restart of mic (useful for debugging)
-                  try {
-                    cleanupVadPolling();
-                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-                      mediaRecorderRef.current.stop();
-                    }
-                  } catch {}
-                  // restart: stop tracks and re-init effect by reloading the page or instructing user to refresh
-                  toast("To restart mic, refresh the page (recommended)");
-                }}>Restart Mic</Button>
-              </div>
-            </div>
-
+  <Card className="glass-card border-0 flex-1 mb-4 overflow-hidden">
+    <ScrollArea className="flex-1 h-full p-6">
+      <div className="flex flex-col space-y-4">
+        {state.messages.length === 0 && (
+          <div className="text-center text-muted-foreground py-12">
+            <Bot className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            <p>Listening continuously. Speak naturally — recording sends after silence.</p>
           </div>
+        )}
+
+        {state.messages.map((message: any) => (
+          <div
+            key={message.id}
+            className={`flex gap-3 ${
+              message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+            }`}
+          >
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                message.role === 'user'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-gradient-to-br from-primary to-tech-glow-secondary text-white'
+              }`}
+            >
+              {message.role === 'user' ? (
+                <User className="w-4 h-4" />
+              ) : (
+                <Bot className="w-4 h-4" />
+              )}
+            </div>
+
+            <div
+              className={`flex-1 ${
+                message.role === 'user' ? 'items-end' : 'items-start'
+              } flex flex-col`}
+            >
+              {message.imageUrl && (
+                <div className="mb-2 rounded-lg overflow-hidden max-w-xs">
+                  <img src={message.imageUrl} alt="Shared" className="w-full" />
+                </div>
+              )}
+              <div
+                className={`rounded-2xl px-4 py-2 max-w-[80%] ${
+                  message.role === 'user'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted'
+                }`}
+              >
+                <p className="text-sm">{message.content}</p>
+              </div>
+              <span className="text-xs text-muted-foreground mt-1 px-2">
+                {new Date(message.timestamp).toLocaleTimeString()}
+              </span>
+            </div>
+          </div>
+        ))}
+
+        {currentTranscript && (
+          <div className="flex gap-3 flex-row-reverse">
+            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
+              <User className="w-4 h-4" />
+            </div>
+            <div className="bg-primary/50 text-primary-foreground rounded-2xl px-4 py-2 max-w-[80%]">
+              <p className="text-sm italic">{currentTranscript}</p>
+            </div>
+          </div>
+        )}
+
+        {isSpeaking && (
+          <div className="flex gap-3">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-tech-glow-secondary text-white flex items-center justify-center flex-shrink-0">
+              <Bot className="w-4 h-4" />
+            </div>
+            <div className="bg-muted rounded-2xl px-4 py-2">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Anchor always at bottom */}
+        <div ref={messagesEndRef} />
+      </div>
+    </ScrollArea>
+  </Card>
+
+  {/* Controls */}
+  <div className="flex gap-2">
+    <div className="flex-1">
+      <div className="mt-4 flex items-center gap-3 p-3 bg-muted/40 backdrop-blur-lg rounded-2xl border border-border">
+        <div className="flex-1">
+          <p className="text-sm text-muted-foreground">
+            Always listening. I'll send your speech after {SILENCE_MS / 1000}s of silence.
+          </p>
+        </div>
+
+        <Button onClick={() => manualFlushAndSend()}>Send Now</Button>
+      </div>
+    </div>
+
+    <div className="w-36 flex items-center justify-end">
+      <Button
+        onClick={() => {
+          try {
+            cleanupVadPolling();
+            if (
+              mediaRecorderRef.current &&
+              mediaRecorderRef.current.state === 'recording'
+            ) {
+              mediaRecorderRef.current.stop();
+            }
+          } catch {}
+          toast('To restart mic, refresh the page (recommended)');
+        }}
+      >
+        Restart Mic
+      </Button>
+    </div>
+  </div>
+</div>
+
         </div>
       </div>
     </div>
