@@ -2,7 +2,7 @@ import { askGemini } from "./textreply.service.js";
 
 
 const INTENT_CLASSIFIER_PROMPT = `
-You are an intent classifier for an AI assistant.
+You are an intent classifier for a LifeOS Glasses vision assistant.
 Your job is to analyze the user's text and return a JSON object with the "intent" and a "payload" if necessary.
 
 The possible intents are:
