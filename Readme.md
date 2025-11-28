@@ -89,27 +89,8 @@ The backend is the **central brain**, orchestrating communication, image capture
 
 
 
-project/
-│
-├── backend
-│ ├── server.js
-│ ├── app.js
-│ ├── routes/
-│ ├── controllers/
-│ ├── services/
-│ ├── models/
-│ └── public/audio
-│
-├── firmware
-│ └── esp32_cam.ino
-│
-├── frontend
-│ ├── src/
-│ ├── pages/
-│ ├── components/
-│ └── utils/
-│
-└── README.md
+<img width="212" height="832" alt="image" src="https://github.com/user-attachments/assets/f7619d53-c9b8-40e5-8937-115c2b97daba" />
+<img width="230" height="881" alt="image" src="https://github.com/user-attachments/assets/6a743588-2d2d-4e99-b79d-6c9ce3bac203" />
 
 
 ---
