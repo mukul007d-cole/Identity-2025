@@ -305,7 +305,6 @@ void setup() {
 
   server.on("/", HTTP_GET, handleIndex);
   server.on("/capture", HTTP_GET, handleCapture);
-  server.on("/stream", HTTP_GET, handleStream);
   server.on("/location", HTTP_GET, handleLocation);
   server.begin();
 

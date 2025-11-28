@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, LayoutDashboard, MessageSquare, Settings, HelpCircle, Shield } from 'lucide-react';
+import { Home, LayoutDashboard, MessageSquare, Settings, Pen, HelpCircle, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/contexts/AppContext';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/assistant', icon: MessageSquare, label: 'Assistant' },
   { to: '/permissions', icon: Shield, label: 'Permissions' },
   { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/notes', icon: Pen, label: 'Notes' },
   { to: '/help', icon: HelpCircle, label: 'Help' },
 ];
 
