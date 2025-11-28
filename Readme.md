@@ -4,27 +4,6 @@ A modular, production-lean prototype of wearable AI glasses built using **ESP32-
 
 Originally built for the **IDENTITY Exhibition 2025 at Dezyne École College Ajmer**.
 
----
-
-## 📌 Table of Contents
-- [Introduction](#introduction)
-- [Features](#features)
-- [System Architecture](#system-architecture)
-- [Tech Stack](#tech-stack)
-- [Directory Structure](#directory-structure)
-- [Installation](#installation)
-- [Environment Variables](#environment-variables)
-- [Backend API Reference](#backend-api-reference)
-- [ESP32 Hardware Setup](#esp32-hardware-setup)
-- [Frontend Usage](#frontend-usage)
-- [Vision Pipeline](#vision-pipeline)
-- [Audio + Speech Pipeline](#audio--speech-pipeline)
-- [Challenges and Engineering Solutions](#challenges-and-engineering-solutions)
-- [Troubleshooting](#troubleshooting)
-- [Roadmap](#roadmap)
-
----
-
 ## 🧠 Introduction
 
 This project demonstrates how **low-cost IoT hardware** can be combined with **cloud-based AI** to deliver a wearable, hands-free assistant capable of:
